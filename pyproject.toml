@@ -7,11 +7,18 @@ authors = [
 ]
 dependencies = [
     "numpy>=2.1.1",
+    "pandas>=2.2.2",
+    "rampy>=0.5.2",
+    "matplotlib>=3.9.2",
 ]
 requires-python = "==3.11.*"
 readme = "README.md"
 license = {text = "MIT"}
 
 
+[project.optional-dependencies]
+jupyter = [
+    "ipykernel>=6.29.5",
+]
 [tool.pdm]
 distribution = false
