@@ -39,6 +39,6 @@ def create_data_from_paths(paths:list[str],
 
 def extract_range(spectrum:np.ndarray, range_from:float, range_to:float) -> np.ndarray:
     x = spectrum[:,0]
-    cond1 = x >= 900
-    cond2 = x <= 1600
+    cond1 = x >= range_from
+    cond2 = x <= range_to
     return spectrum[cond1 & cond2]

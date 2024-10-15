@@ -166,3 +166,4 @@ cython_debug/
 data/blood/*
 !.keeps
 .DS_Store
+data/silicon
