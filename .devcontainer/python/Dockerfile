@@ -15,7 +15,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-ARG WORKDIR=/workspaces/raman-for-glucose-measurement 
+ARG WORKDIR=/app
 ARG VENDOR=""
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -58,3 +58,5 @@ RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 USER $USERNAME
 
 RUN pip install --user pdm
+
+ENTRYPOINT [ /bin/bash ]

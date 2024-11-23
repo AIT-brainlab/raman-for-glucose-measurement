@@ -4,10 +4,12 @@
 	"name": "Python",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+	// "workspaceFolder": "/app/${localWorkspaceFolderBasename}",
+	"workspaceFolder": "/app/",
 
 	// Use this environment variable if you need to bind mount your local source code into a new container.
 	"remoteEnv": {
+		// this is the current path of this project
 		"LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
 	},
 
@@ -28,7 +30,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "git config --global --add safe.directory /workspaces/raman-for-glucose-measurement"
+	"postCreateCommand": "git config --global --add safe.directory /app"
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"

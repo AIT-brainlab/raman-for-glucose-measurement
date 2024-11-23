@@ -164,6 +164,8 @@ cython_debug/
 
 # My ignore
 data/blood/*
+data/silicon/*
+data/reference/*
+data/water/*
 !.keeps
 .DS_Store
-data/silicon
