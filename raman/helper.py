@@ -42,3 +42,18 @@ def extract_range(spectrum:np.ndarray, range_from:float, range_to:float) -> np.n
     cond1 = x >= range_from
     cond2 = x <= range_to
     return spectrum[cond1 & cond2]
+
+class TextStyle:
+   PURPLE = '\033[95m'
+   CYAN = '\033[96m'
+   DARKCYAN = '\033[36m'
+   BLUE = '\033[94m'
+   GREEN = '\033[92m'
+   YELLOW = '\033[93m'
+   RED = '\033[91m'
+   BOLD = '\033[1m'
+   UNDERLINE = '\033[4m'
+   END = '\033[0m'
+
+def bold(text:str) -> str:
+    return TextStyle.BOLD + text + TextStyle.END

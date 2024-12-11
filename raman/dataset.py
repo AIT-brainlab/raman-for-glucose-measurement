@@ -35,7 +35,7 @@ class SampleSet:
             if(sample.x.min() < range_min): range_min = sample.x.min()
             if(sample.x.max() > range_max): range_max = sample.x.max()
         self._range = (range_min, range_max)
-        print(self._range, range_min, range_max)
+        # print(self._range, range_min, range_max)
         _logger.info(f"Load {len(self._samples)} samples in {self}")
 
     def get_samples(self) -> list[Sample]:
@@ -47,12 +47,16 @@ class SampleSet:
         for sample in self.get_samples():
             sample.interpolate(step=step)
 
+    def despike(self, window_length:int=5, threshold:int=1):
+        for sample in self.get_samples():
+            sample.despike(window_length=window_length, threshold=threshold)
+
     def set_raman_range(self, min:float, max:float):
         for sample in self.get_samples():
             sample.set_raman_range(min=min, max=max)
         self._range = (min, max)
 
-    def plot(self):
+    def plot(self, title:str=""):
         plt.figure(figsize=(16,9))
         for sample in self.get_samples():
             plt.plot(sample.x, sample.y, label=sample.name)
@@ -60,6 +64,10 @@ class SampleSet:
         plt.grid()
         plt.xlim(self._range[0] - 10, self._range[1] + 10)
         plt.ylim(0, 0xFFFF) #range of 16 bit is 0 - 65536 (0xFFFF is all 1 in 16 bits)
+
+        plt.xlabel("Raman shift, cm$^{-1}$", fontsize = 12)
+        plt.ylabel("intensity, a. u.", fontsize = 12)
+        plt.title(title,fontsize = 12,fontweight="bold")
         plt.show()
 
     def __repr__(self) -> str:
@@ -76,8 +84,7 @@ if(__name__ == "__main__"):
     sampleset = SampleSet(path=path)
     sampleset.plot()
     # TODO: Implement despike here
-
-
+    sampleset.despike(window_length=5, threshold=1)
     sampleset.interpolate(step=0.1)
     sampleset.plot()
     sampleset.set_raman_range(min=600, max=1600)
