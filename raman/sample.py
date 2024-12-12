@@ -1,7 +1,9 @@
 from raman.helper import bold
 
 import numpy as np
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, interp1d
+from scipy.signal import find_peaks, peak_widths
+from rampy.spectranization import despiking
 import matplotlib.pyplot as plt
 
 from pathlib import Path
@@ -61,7 +63,7 @@ class Sample:
 
     _dx:float
 
-    def __init__(self, x:np.ndarray, y:np.ndarray, path:(str|Path|None)=None, interpolate:bool=True):
+    def __init__(self, x:np.ndarray, y:np.ndarray, path:(str|Path|None)=None, interpolate:bool=True, verbose:bool=False):
         if(isinstance( x, np.ndarray ) == False):
             raise TypeError(f"Expecting `x` to be type of np.ndarray but got {type(x)}")
         if(isinstance( y, np.ndarray ) == False):
@@ -79,6 +81,12 @@ class Sample:
         
         self.reset_data()
         if(interpolate):
+            # It is better to remove spike before interpoate
+            spike_regions = self.find_spike()
+            if(len(spike_regions) > 0):
+                if(verbose):
+                    print(f"Found {len(spike_regions)} spike(s) in path={path.as_posix()}, self.remove_spike() is perform automatically.")
+                self.remove_spike(auto=False, spike_regions=spike_regions)
             self.interpolate(step=1)
         
     @property
@@ -89,6 +97,24 @@ class Sample:
     def data(self) -> np.ndarray:
         return np.hstack([self.x.reshape(-1,1), self.y.reshape(-1,1)])
 
+    @property
+    def mean(self) -> float:
+        return self.y.mean()
+    
+    @property
+    def std(self) -> float:
+        return self.y.std()
+    
+    @property
+    def stat(self) -> tuple[float, float, float, float]:
+        """
+        This return a quadruple of (max, min, mean, std) of the sample.y
+        """
+        return (self.y.max(),
+                self.y.min(),
+                self.mean,
+                self.std)
+
     def reset_data(self):
         """
         Use to set/reset the data (`x` and `y`) with the original data.
@@ -96,6 +122,103 @@ class Sample:
         self.x:np.ndarray = deepcopy(self._x)
         self.y:np.ndarray = deepcopy(self._y)
         self._dx:float = np.diff(self.x).mean()
+
+    def find_spike(self, height:float=None, width:float=None, verbose:bool=False) -> list[np.ndarray]:
+        """
+        A wrapper of scipy.signal.find_peaks which return a list of peak index.
+
+        Parameters
+        ----------
+        height : float or None
+            The threshold of height.
+            Default is None, which is calculated with `sample.mean` + 4 * `sample.std`
+        width : float or None
+            The limit of width.
+            Default is None, which is calculated to be less than 5 Raman Shift (5/sample._dx)
+            
+        Returns
+        --------
+        list of NDArray :
+            Each item in the list is the NDArray with indexes of the peaks region.
+        """
+        if( isinstance(height, type(None)) ):
+            height = self.mean + (4 * self.std)
+        if( isinstance(width, type(None)) ):
+            width = int( 5 / self._dx )
+        
+        peak_idxes, _ = find_peaks(self.y, height=height)
+        if(verbose): print(f"Found {peak_idxes.shape[0]} peaks.")
+        widths, _, lefts, rights = peak_widths(self.y, peak_idxes)
+        is_spikes = widths < width
+        if(verbose): 
+            print(f"{is_spikes.sum()}/{peak_idxes.shape[0]} are less than width={width} samples")
+            print("id", "width", "left", "right", "is_spike",sep="\t")
+            for i in range(len(widths)):
+                print(i, 
+                      round(widths[i],2),
+                      round(lefts[i] ,2),
+                      round(rights[i],2),
+                      is_spikes[i],
+                      sep="\t")
+
+        spike_region:list[np.ndarray] = []
+        for left, right in zip(lefts[is_spikes], rights[is_spikes]):
+            
+            window = np.arange( np.floor(left) -1 , np.ceil(right)+1 , dtype=np.int64 )
+            spike_region.append(window)
+
+        return spike_region
+
+    def remove_spike(self, auto:bool=True, spike_regions:list[np.ndarray]=None):
+        """
+        Removing Spike based on https://towardsdatascience.com/removing-spikes-from-raman-spectra-a-step-by-step-guide-with-python-b6fd90e8ea77
+        Use Spike Region from `Sample.find_spike` then perform a `scipy.interpolate.interp1d(kind='liner')` to corrected the spike.
+
+        Parameters
+        ----------
+        auto : bool
+            if True, `spike_regions` is ignore and use `Sample.find_spike` to find spikes.
+            if False, `spike_regions` must be specified.
+        spike_regions : list of NDArray or None
+            Must be specified is auto is False.
+            It is a list of spike (NDArray) indicate the region of spike.
+        """
+        if(auto):
+            spike_regions = self.find_spike()
+        else:
+            if( isinstance(spike_regions, type(None)) ):
+                ValueError(f"When auto=False, spike_regions must be specified.")
+
+        if( isinstance(spike_regions, type(None)) ):
+            raise ValueError(f"spike_regions is None. This should not happen.")
+
+        for spike_region in spike_regions:
+            # create interpolate_window from left and right of the spike_region
+            left = spike_region - len(spike_region)
+            right = spike_region + len(spike_region)
+            interpolate_window = np.concat( [left, right] )
+            # correct the signal with interp1d
+            corrector = interp1d(interpolate_window, self.y[interpolate_window], kind='linear')
+            self.y[spike_region] = corrector(spike_region)
+    
+
+    def despike(self, window_length:(str|int)='auto', threshold:int=3):
+        """
+        The wrapper of rampy.spectranization.despiking
+
+        Parameters
+        ----------
+        window_length : str or int
+            if 'auto' then the `window_lenght` will be caculate according to the sample._dx to cover 5 Raman Shift.
+            The integer specify the size of window for despiking.
+        threshold : int
+            The threshold that the spike exceed then despike is activiate.
+        """
+        if(isinstance(window_length, str)):
+            if(window_length != 'auto'):
+                raise ValueError(f"window_length should be 'auto' or integer. Got {window_length=}")
+            window_length = int(5 / self._dx)
+        self.y = despiking(self.x, self.y, neigh=window_length, threshold=threshold)
 
     def interpolate(self, step:float):
         """
@@ -216,6 +339,7 @@ class Sample:
         return self.__str__()
 
     def __str__(self) -> str:
+        smax, smin, smean, sstd = self.stat
         rep = f"""
   {bold('Sample')}: {self.name}
     {bold('date')}: {self.date}
@@ -223,6 +347,7 @@ class Sample:
    {bold('laser')}: {self.laser}
 {bold('exposure')}: {self.exposure} s
     {bold('accu')}: {self.accumulation}
+    {bold('stat')}: Max={round(smax,2)} Min={round(smin,2)} Mean={round(smean,2)} Std={round(sstd,2)}
 """
         return rep
 
@@ -243,8 +368,9 @@ def read_txt(path:(str|Path),
                         "accumulation","year",
                         "month","date",
                         "hour","minute",
-                        "second", "01"]
-                        ) -> Sample:
+                        "second", "01"],
+    interpolate:bool=True,
+    verbose:bool=False) -> Sample:
     """
     Load `Sample` from .txt file exported from Horiba LS6 software
 
@@ -255,7 +381,10 @@ def read_txt(path:(str|Path),
     name_format : list of str, optional
         A list indicates the naming scheme of the file.
         Default naming scheme is `name_grating_laser_exposure_accumelation_year_month_date_hour_minute_second_01`.
-    
+    interpolate : bool
+        Default is True.
+        This will pass to the Sample(interpolate). It indicates whether you want to perform interpolation during object creation or not.
+
     Returns
     -------
     Sample
@@ -277,7 +406,7 @@ def read_txt(path:(str|Path),
     
     x,y = _load_raman_from_txt(path=path)
     
-    sample = Sample(x=x, y=y, path=path)
+    sample = Sample(x=x, y=y, path=path, interpolate=interpolate, verbose=verbose)
 
     datetime_str:list[str] = []
     for key, value in zip(name_format, values):
@@ -293,18 +422,18 @@ def read_txt(path:(str|Path),
     sample.__setattr__('date', datetime.strptime( "".join(datetime_str), "%Y%m%d%H%M%S" ))
     return sample
     
-if __name__ == '__main__':
-    sample1 = read_txt(path=f"data/silicon/focuspower/silicon-down_600_785 nm_90 s_1_2024_11_19_16_41_27_01.txt")
-    sample2 = read_txt(path=f"data/silicon/focuspower/silicon-down_600_785 nm_60 s_1_2024_11_19_16_33_46_01.txt")
-    sample3 = read_txt(path=f"data/silicon/focuspower/silicon-down_600_785 nm_30 s_1_2024_11_19_16_28_40_01.txt")
-    sample:Sample = sample1 | (sample2 + sample3)
-    print(sample)
-    print(sample1)
-    print(sample2)
-    print(sample3)
-    sample.plot("sample")
-    sample1.plot("sample1")
-    sample2.plot("sample2")
-    sample3.plot("sample3")
-    plt.legend()
-    plt.show()
+# if __name__ == '__main__':
+#     sample1 = read_txt(path=f"data/silicon/focuspower/silicon-down_600_785 nm_90 s_1_2024_11_19_16_41_27_01.txt")
+#     sample2 = read_txt(path=f"data/silicon/focuspower/silicon-down_600_785 nm_60 s_1_2024_11_19_16_33_46_01.txt")
+#     sample3 = read_txt(path=f"data/silicon/focuspower/silicon-down_600_785 nm_30 s_1_2024_11_19_16_28_40_01.txt")
+#     sample:Sample = sample1 | (sample2 + sample3)
+#     print(sample)
+#     print(sample1)
+#     print(sample2)
+#     print(sample3)
+#     sample.plot("sample")
+#     sample1.plot("sample1")
+#     sample2.plot("sample2")
+#     sample3.plot("sample3")
+#     plt.legend()
+#     plt.show()
