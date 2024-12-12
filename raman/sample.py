@@ -124,15 +124,16 @@ class Sample:
         self.y:np.ndarray = deepcopy(self._y)
         self._dx:float = np.diff(self.x).mean()
 
-    def find_spike(self, height:float=None, width:float=None, verbose:bool=False) -> list[np.ndarray]:
+    # def find_spike(self, height:float=None, width:float=None, verbose:bool=False) -> list[np.ndarray]:
+    def find_spike(self, prominence:float=250, width:float=None, verbose:bool=False) -> list[np.ndarray]:
         """
         A wrapper of scipy.signal.find_peaks which return a list of peak index.
 
         Parameters
         ----------
-        height : float or None
-            The threshold of height.
-            Default is None, which is calculated with `sample.mean` + 4 * `sample.std`
+        prominence : float or None
+            The prominence of a peak measures how much a peak stands out from the surrounding baseline 
+            of the signal and is defined as the vertical distance between the peak and its lowest contour line.
         width : float or None
             The limit of width.
             Default is None, which is calculated to be less than 5 Raman Shift (5/sample._dx)
@@ -142,12 +143,13 @@ class Sample:
         list of NDArray :
             Each item in the list is the NDArray with indexes of the peaks region.
         """
-        if( isinstance(height, type(None)) ):
-            height = self.mean + (4 * self.std)
+        # if( isinstance(height, type(None)) ):
+        #     height = self.mean + (4 * self.std)
         if( isinstance(width, type(None)) ):
-            width = int( 5 / self._dx )
+            width = int( 10 / self._dx )
         
-        peak_idxes, _ = find_peaks(self.y, height=height)
+        # peak_idxes, _ = find_peaks(self.y, height=height)
+        peak_idxes, _ = find_peaks(self.y, prominence=prominence)
         if(verbose): print(f"Found {peak_idxes.shape[0]} peaks.")
         widths, _, lefts, rights = peak_widths(self.y, peak_idxes)
         is_spikes = widths < width
@@ -238,6 +240,23 @@ class Sample:
         self.x = new_x
         self._dx = step
 
+    def normalized(self, method:str='minmax'):
+        """
+        This will perform normalization on Sample.y
+
+        Parameters
+        ----------
+        method : str
+            'minmax' will use MinMax method to scale Sample.y to [0,1]
+            'zscore' will use Z-Score  method to scale Sample.y to mean=0 std=1
+        """
+        if(method == 'minmax'):
+            self.y = (self.y - self.y.min()) / (self.y.max() - self.y.min())
+        elif(method == 'zscore'):
+            self.y = (self.y - self.mean) / self.std
+        else:
+            raise ValueError(f"method={method} is not supported. Use 'minmax' or 'zscore'. ")
+        
     def extract_range(self, low:float, high:float):
         """
         Use to extract Raman Shift range [low, high]
@@ -436,6 +455,10 @@ def read_txt(path:(str|Path),
     return sample
 
 def accumulate(samples:list[Sample]) -> Sample:
+    if( isinstance(samples, list ) == False):
+        raise TypeError(f"Method expect list[Sample] but got {type(samples)}")
+    if(len(samples) == 1):
+        return samples[0]
     return reduce(lambda a,b: a | b,  samples)
 
 # if __name__ == '__main__':
