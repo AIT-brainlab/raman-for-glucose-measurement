@@ -11,6 +11,7 @@ import os
 from typing import Self
 from datetime import datetime
 from copy import deepcopy
+from functools import reduce
 
 class Sample:
     """
@@ -433,7 +434,10 @@ def read_txt(path:(str|Path),
             sample.__setattr__(key, value)
     sample.__setattr__('date', datetime.strptime( "".join(datetime_str), "%Y%m%d%H%M%S" ))
     return sample
-    
+
+def accumulate(samples:list[Sample]) -> Sample:
+    return reduce(lambda a,b: a | b,  samples)
+
 # if __name__ == '__main__':
 #     sample1 = read_txt(path=f"data/silicon/focuspower/silicon-down_600_785 nm_90 s_1_2024_11_19_16_41_27_01.txt")
 #     sample2 = read_txt(path=f"data/silicon/focuspower/silicon-down_600_785 nm_60 s_1_2024_11_19_16_33_46_01.txt")
