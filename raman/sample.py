@@ -325,7 +325,19 @@ class Sample:
         new_sample.paths = new_sample.paths.union(b.paths)
         return new_sample
 
-
+    def save(self, path:Path=None, basepath:str=""):
+        basepath:Path = Path(basepath)
+        if(basepath.exists() == False):
+            raise FileExistsError(f"basepath={basepath.as_posix()} is not exists.")
+        filename:str = f"{self.name}_{self.grating}_{self.laser}_{self.exposure} s_{self.accumulation}_{self.date.year}_{self.date.strftime('%Y_%m_%d_%H_%M_%S')}.txt"
+        if( isinstance(path, type(None) ) ):
+            path:Path = Path(self.name,"sample")
+        
+        path:Path = basepath.joinpath(path)
+        os.makedirs(path, exist_ok=True)
+        target:Path = path.joinpath(filename)
+        np.savetxt(target, np.flip(self.data, axis=0))
+        print(f"File save to path={target.as_posix()}")
 
     def plot(self, label:str=None):
         if( isinstance(label, type(None)) ):
