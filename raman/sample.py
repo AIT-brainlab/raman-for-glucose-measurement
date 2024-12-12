@@ -359,10 +359,10 @@ class Sample:
         np.savetxt(target, np.flip(self.data, axis=0))
         print(f"File save to path={target.as_posix()}")
 
-    def plot(self, label:str=None):
+    def plot(self, label:str=None, color=None):
         if( isinstance(label, type(None)) ):
             label = self.name
-        plt.plot(self.x, self.y, label=label, alpha=0.8, linewidth=0.8)
+        plt.plot(self.x, self.y, label=label, alpha=0.8, linewidth=0.8, color=color)
 
     def __getitem__(self, idx):
         return self.data[idx]
