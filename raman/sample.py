@@ -61,6 +61,8 @@ class Sample:
     accumulation:int
     grating:str
     laser  :str
+    power  :float
+    lens   :str
 
     _dx:float
 
@@ -395,7 +397,7 @@ def _load_raman_from_txt(path:Path) -> tuple[np.ndarray, np.ndarray]:
     return deepcopy(measure[:,0]), deepcopy(measure[:,1])
 
 def read_txt(path:(str|Path), 
-    name_format:list[str] = ["name","grating",
+    name_format:list[str] = ["name","lens","power","grating",
                         "laser","exposure",
                         "accumulation","year",
                         "month","date",
@@ -431,6 +433,7 @@ def read_txt(path:(str|Path),
         raise FileNotFoundError(f"Path={path.as_posix()} is not exist.")
     
     # 24_600_785 nm_60 s_1_2024_03_19_10_30_09_01
+    # 24_5x_0-71_600_785 nm_60 s_1_2024_03_19_10_30_09_01
     filename:str = os.path.splitext(path.name)[0]
     values:list[str] = filename.split('_')
     if(len(values) != len(name_format)):
@@ -447,6 +450,8 @@ def read_txt(path:(str|Path),
         else:
             if(key in ["exposure"]):
                 value = int(value.split(' ')[0])
+            elif(key in ["power"]):
+                float(value.replace("-","."))
             elif(key in ["accumulation"]):
                 value = int(value)
             elif(key == '01'): continue
