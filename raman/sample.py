@@ -351,9 +351,10 @@ class Sample:
         basepath:Path = Path(basepath)
         if(basepath.exists() == False):
             raise FileExistsError(f"basepath={basepath.as_posix()} is not exists.")
-        filename:str = f"{self.name}_{self.grating}_{self.laser}_{self.exposure} s_{self.accumulation}_{self.date.year}_{self.date.strftime('%Y_%m_%d_%H_%M_%S')}.txt"
+        power_str = str(self.power).replace(".","-")
+        filename:str = f"{self.name}_{self.lens}_{power_str}_{self.grating}_{self.laser}_{self.exposure} s_{self.accumulation}_{self.date.year}_{self.date.strftime('%Y_%m_%d_%H_%M_%S')}.txt"
         if( isinstance(path, type(None) ) ):
-            path:Path = Path(self.name,"sample")
+            path:Path = Path(self.name,self.lens,"sample")
         
         path:Path = basepath.joinpath(path)
         os.makedirs(path, exist_ok=True)
@@ -379,6 +380,8 @@ class Sample:
     {bold('date')}: {self.date}
  {bold('grating')}: {self.grating}
    {bold('laser')}: {self.laser}
+   {bold('power')}: {self.power}
+    {bold('lens')}: {self.lens}
 {bold('exposure')}: {self.exposure} s
     {bold('accu')}: {self.accumulation}
     {bold('stat')}: Max={round(smax,2)} Min={round(smin,2)} Mean={round(smean,2)} Std={round(sstd,2)}
@@ -451,7 +454,7 @@ def read_txt(path:(str|Path),
             if(key in ["exposure"]):
                 value = int(value.split(' ')[0])
             elif(key in ["power"]):
-                float(value.replace("-","."))
+                value = float(value.replace("-","."))
             elif(key in ["accumulation"]):
                 value = int(value)
             elif(key == '01'): continue
