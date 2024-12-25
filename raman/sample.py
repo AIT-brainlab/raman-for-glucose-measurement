@@ -65,7 +65,6 @@ class Sample:
     lens   :str
 
     _dx:float
-
     def __init__(self, x:np.ndarray, y:np.ndarray, path:(str|Path|None)=None, interpolate:bool=True, verbose:bool=False):
         if(isinstance( x, np.ndarray ) == False):
             raise TypeError(f"Expecting `x` to be type of np.ndarray but got {type(x)}")
@@ -125,6 +124,27 @@ class Sample:
         self.x:np.ndarray = deepcopy(self._x)
         self.y:np.ndarray = deepcopy(self._y)
         self._dx:float = np.diff(self.x).mean()
+
+    def at(self, shift:(float|list[float])) -> np.ndarray:
+        """
+        Return the sample.y in the range of `shift`.
+
+        Parameters
+        ----------
+        shift : float or list of float
+            The value or values indicate the Raman Shift (sample.x) that you want to look up for the intensity (sample.y)
+
+        Returns
+        -------
+        NDArray :
+            shape of (n_samples, ) of the intensity you look up for.
+        """
+
+        # if(  hasattr(self, "_y_interp") == False ):
+        #     raise AttributeError(f"The Sample should perform .interpolate first before you can use this method.")
+        y_interp = CubicSpline(self.x, self.y, bc_type="natural")
+        return y_interp(shift)
+
 
     # def find_spike(self, height:float=None, width:float=None, verbose:bool=False) -> list[np.ndarray]:
     def find_spike(self, prominence:float=250, width:float=None, verbose:bool=False) -> list[np.ndarray]:
@@ -352,7 +372,7 @@ class Sample:
         if(basepath.exists() == False):
             raise FileExistsError(f"basepath={basepath.as_posix()} is not exists.")
         power_str = str(self.power).replace(".","-")
-        filename:str = f"{self.name}_{self.lens}_{power_str}_{self.grating}_{self.laser}_{self.exposure} s_{self.accumulation}_{self.date.year}_{self.date.strftime('%Y_%m_%d_%H_%M_%S')}.txt"
+        filename:str = f"{self.name}_{self.lens}_{power_str}_{self.grating}_{self.laser}_{self.exposure} s_{self.accumulation}_{self.date.strftime('%Y_%m_%d_%H_%M_%S')}_01.txt"
         if( isinstance(path, type(None) ) ):
             path:Path = Path(self.name,self.lens,"sample")
         

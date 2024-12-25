@@ -1,3 +1,6 @@
+import matplotlib.pyplot
+from raman import FONT_FOLDER
+
 import pandas as pd
 import numpy as np
 import os
@@ -5,6 +8,7 @@ from pathlib import Path
 from glob import glob
 from datetime import datetime
 import rampy as rp
+import matplotlib
 
 def get_file_list(path:Path) -> list[str]:
     path_str:str = str(path.joinpath("*"))
@@ -57,3 +61,22 @@ class TextStyle:
 
 def bold(text:str) -> str:
     return TextStyle.BOLD + text + TextStyle.END
+
+
+
+def set_thaifont():
+    def download_font():
+        import urllib.request
+        url = "https://github.com/google/fonts/raw/main/ofl/sarabun/Sarabun-Regular.ttf"
+        urllib.request.urlretrieve(url, font_path)
+
+    font_path:Path = FONT_FOLDER.joinpath("Sarabun-Regular.ttf")
+    if(font_path.exists() == False):
+        download_font()
+
+    matplotlib.font_manager.fontManager.addfont(font_path)
+    matplotlib.rc('font', family='Sarabun')
+    matplotlib.pyplot.rcParams ['font.family'] = ('Sarabun')
+
+if __name__ == "__main__":
+    set_thaifont()
