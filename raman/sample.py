@@ -280,7 +280,7 @@ class Sample:
         else:
             raise ValueError(f"method={method} is not supported. Use 'minmax' or 'zscore'. ")
 
-    def smoothing(self, window_lenght:(str|int)='auto', polyorder=2, test:bool=False) -> np.ndarray:
+    def smoothing(self, window_length:(str|int)='auto', polyorder=2, test:bool=False) -> np.ndarray:
         """
         This is the wrapper for scipy.signal.savgol_filter
 
@@ -302,7 +302,7 @@ class Sample:
             window_length = int(30 / self._dx)
 
         y = deepcopy(self.y)
-        y = savgol_filter(x=y, window_length=window_lenght, polyorder=polyorder)
+        y = savgol_filter(x=y, window_length=window_length, polyorder=polyorder)
         if(test == False):
             self.y = y
         return y
