@@ -3,6 +3,7 @@ from raman.helper import bold
 import numpy as np
 from scipy.interpolate import CubicSpline, interp1d
 from scipy.signal import find_peaks, peak_widths
+from scipy.signal import savgol_filter
 from rampy.spectranization import despiking
 import matplotlib.pyplot as plt
 
@@ -278,7 +279,37 @@ class Sample:
             self.y = (self.y - self.mean) / self.std
         else:
             raise ValueError(f"method={method} is not supported. Use 'minmax' or 'zscore'. ")
+
+    def smoothing(self, window_lenght:(str|int)='auto', polyorder=2, test:bool=False) -> np.ndarray:
+        """
+        This is the wrapper for scipy.signal.savgol_filter
+
+        Paramters
+        ---------
+        window_lenght : str or int
+            if 'auto' then the `window_lenght` will be caculate according to the sample._dx to cover 30 Raman Shift.
+            The integer specify the size of window for smoothing.
+        polyorder : int
+            Default is 2. Specify the polyorder of the filter. The higher the number, less smoothing it is.
+        test : bool
+            Default is False. 
+            When this is True, the result of smoothing will no be saved into the sample.y.
+        """
+
+        if(isinstance(window_length, str)):
+            if(window_length != 'auto'):
+                raise ValueError(f"window_length should be 'auto' or integer. Got {window_length=}")
+            window_length = int(30 / self._dx)
+
+        y = deepcopy(self.y)
+        y = savgol_filter(x=y, window_length=window_lenght, polyorder=polyorder)
+        if(test == False):
+            self.y = y
+        return y
         
+
+
+
     def extract_range(self, low:float, high:float):
         """
         Use to extract Raman Shift range [low, high]
