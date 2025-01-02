@@ -11,6 +11,8 @@ dependencies = [
     "rampy>=0.5.2",
     "matplotlib>=3.9.2",
     "chemotools>=0.1.5",
+    "nbconvert>=7.16.4",
+    "pandoc>=2.4",
 ]
 requires-python = "==3.11.*"
 readme = "README.md"
