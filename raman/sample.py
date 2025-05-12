@@ -1,10 +1,10 @@
 from raman.helper import bold
 
 import numpy as np
-from scipy.interpolate import CubicSpline, interp1d
-from scipy.signal import find_peaks, peak_widths
-from scipy.signal import savgol_filter
-from rampy.spectranization import despiking
+from scipy.interpolate import CubicSpline, interp1d # type: ignore
+from scipy.signal import find_peaks, peak_widths # type: ignore
+from scipy.signal import savgol_filter # type: ignore
+from rampy.spectranization import despiking # type: ignore
 import matplotlib.pyplot as plt
 
 from pathlib import Path
@@ -88,12 +88,13 @@ class Sample:
             spike_regions = self.find_spike()
             if(len(spike_regions) > 0):
                 if(verbose):
-                    print(f"Found {len(spike_regions)} spike(s) in path={path.as_posix()}, self.remove_spike() is perform automatically.")
+
+                    print(f"Found {len(spike_regions)} spike(s) in path={path.as_posix() if path else ''}, self.remove_spike() is perform automatically.") # type: ignore
                 self.remove_spike(auto=False, spike_regions=spike_regions)
             self.interpolate(step=1)
         
     @property
-    def shape(self) -> np.ndarray.shape:
+    def shape(self) -> tuple:
         return self.data.shape
     
     @property
@@ -122,9 +123,9 @@ class Sample:
         """
         Use to set/reset the data (`x` and `y`) with the original data.
         """
-        self.x:np.ndarray = deepcopy(self._x)
-        self.y:np.ndarray = deepcopy(self._y)
-        self._dx:float = np.diff(self.x).mean()
+        self.x:np.ndarray = deepcopy(self._x) # type: ignore
+        self.y:np.ndarray = deepcopy(self._y) # type: ignore
+        self._dx:float = np.diff(self.x).mean() # type: ignore
 
     def at(self, shift:(float|list[float])) -> np.ndarray:
         """
@@ -148,7 +149,7 @@ class Sample:
 
 
     # def find_spike(self, height:float=None, width:float=None, verbose:bool=False) -> list[np.ndarray]:
-    def find_spike(self, prominence:float=250, width:float=None, verbose:bool=False) -> list[np.ndarray]:
+    def find_spike(self, prominence:float=250, width:(float|None)=None, verbose:bool=False) -> list[np.ndarray]:
         """
         A wrapper of scipy.signal.find_peaks which return a list of peak index.
 
@@ -195,7 +196,7 @@ class Sample:
 
         return spike_region
 
-    def remove_spike(self, auto:bool=True, spike_regions:list[np.ndarray]=None):
+    def remove_spike(self, auto:bool=True, spike_regions:(list[np.ndarray] | None)=None):
         """
         Removing Spike based on https://towardsdatascience.com/removing-spikes-from-raman-spectra-a-step-by-step-guide-with-python-b6fd90e8ea77
         Use Spike Region from `Sample.find_spike` then perform a `scipy.interpolate.interp1d(kind='liner')` to corrected the spike.
@@ -398,22 +399,21 @@ class Sample:
         new_sample.paths = new_sample.paths.union(b.paths)
         return new_sample
 
-    def save(self, path:Path=None, basepath:str=""):
-        basepath:Path = Path(basepath)
+    def save(self, path:(Path|None)=None, basepath:Path=Path()):
         if(basepath.exists() == False):
             raise FileExistsError(f"basepath={basepath.as_posix()} is not exists.")
         power_str = str(self.power).replace(".","-")
         filename:str = f"{self.name}_{self.lens}_{power_str}_{self.grating}_{self.laser}_{self.exposure} s_{self.accumulation}_{self.date.strftime('%Y_%m_%d_%H_%M_%S')}_01.txt"
         if( isinstance(path, type(None) ) ):
-            path:Path = Path(self.name,self.lens,"sample")
+            path:Path = Path(self.name,self.lens,"sample") # type: ignore
         
-        path:Path = basepath.joinpath(path)
-        os.makedirs(path, exist_ok=True)
-        target:Path = path.joinpath(filename)
+        path:Path = basepath.joinpath(str(path)) # type: ignore
+        os.makedirs(path, exist_ok=True) # type: ignore
+        target:Path = path.joinpath(filename) # type: ignore
         np.savetxt(target, np.flip(self.data, axis=0))
         print(f"File save to path={target.as_posix()}")
 
-    def plot(self, label:str=None, color=None):
+    def plot(self, label:(str|None)=None, color=None):
         if( isinstance(label, type(None)) ):
             label = self.name
         plt.plot(self.x, self.y, label=label, alpha=0.8, linewidth=0.8, color=color)
@@ -481,19 +481,19 @@ def read_txt(path:(str|Path),
 
     # Check if `path` is str
     if( isinstance(path, str) ):
-        path:Path = Path(path)
+        path:Path = Path(path) # type: ignore
     # Check if path exist
-    if( path.exists() == False):
-        raise FileNotFoundError(f"Path={path.as_posix()} is not exist.")
+    if( path.exists() == False): # type: ignore
+        raise FileNotFoundError(f"Path={path.as_posix()} is not exist.") # type: ignore
     
     # 24_600_785 nm_60 s_1_2024_03_19_10_30_09_01
     # 24_5x_0-71_600_785 nm_60 s_1_2024_03_19_10_30_09_01
-    filename:str = os.path.splitext(path.name)[0]
+    filename:str = os.path.splitext(path.name)[0] # type: ignore
     values:list[str] = filename.split('_')
     if(len(values) != len(name_format)):
         raise ValueError(f"name_format ({len(name_format)}) is not match the filename ({len(values)}) after split.\nname_format={name_format}.\nfilename={values}")
     
-    x,y = _load_raman_from_txt(path=path)
+    x,y = _load_raman_from_txt(path=path) # type: ignore
     
     sample = Sample(x=x, y=y, path=path, interpolate=interpolate, verbose=verbose)
 
@@ -503,11 +503,11 @@ def read_txt(path:(str|Path),
             datetime_str.append(value)
         else:
             if(key in ["exposure"]):
-                value = int(value.split(' ')[0])
+                value = int(value.split(' ')[0]) # type: ignore
             elif(key in ["power"]):
-                value = float(value.replace("-","."))
+                value = float(value.replace("-",".")) # type: ignore
             elif(key in ["accumulation"]):
-                value = int(value)
+                value = int(value) # type: ignore
             elif(key == '01'): continue
             sample.__setattr__(key, value)
     sample.__setattr__('date', datetime.strptime( "".join(datetime_str), "%Y%m%d%H%M%S" ))

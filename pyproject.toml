@@ -1,10 +1,9 @@
 [project]
-name = "raman"
+name = "raman-for-glucose-measurement"
 version = "0.1.0"
-description = "Default template for PDM package"
-authors = [
-    {name = "akraradets", email = "akraradets@gmail.com"},
-]
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
 dependencies = [
     "numpy>=2.1.1",
     "pandas>=2.2.2",
@@ -13,15 +12,14 @@ dependencies = [
     "chemotools>=0.1.5",
     "nbconvert>=7.16.4",
     "pandoc>=2.4",
+    "pymongo[srv]>=4.12.1",
+    "pydantic>=2.11.4",
 ]
-requires-python = "==3.11.*"
-readme = "README.md"
-license = {text = "MIT"}
 
-
-[project.optional-dependencies]
-jupyter = [
+[dependency-groups]
+dev = [
     "ipykernel>=6.29.5",
 ]
-[tool.pdm]
-distribution = false
+
+[tool.setuptools]
+packages = ["raman"]

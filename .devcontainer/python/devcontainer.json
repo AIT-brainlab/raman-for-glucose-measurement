@@ -13,16 +13,20 @@
 		"LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
 	},
 
-	"features": {
-		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
-	},
+	// "features": {
+	// 	"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+	// },
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"michelemelluso.gitignore",
 				"yzhang.markdown-all-in-one",
 				"ms-python.python",
-				"ms-toolsai.jupyter"
+				"ms-toolsai.jupyter",
+				"mongodb.mongodb-vscode",
+				"tamasfe.even-better-toml",
+				"ms-python.mypy-type-checker",
+				"ms-python.black-formatter"
 			]
 		}
 	},

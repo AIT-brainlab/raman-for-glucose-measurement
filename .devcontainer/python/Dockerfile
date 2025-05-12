@@ -1,4 +1,4 @@
-FROM python:3.11.9-bookworm
+FROM python:3.13.3-bookworm
 
 # CREATE USER
 ARG USERNAME=user
@@ -57,6 +57,6 @@ RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # [Optional] Set the default user. Omit if you want to keep the default as root.
 USER $USERNAME
 
-RUN pip install --user pdm
+RUN pip install --user uv
 
-ENTRYPOINT [ /bin/bash ]
+# ENTRYPOINT [ /bin/bash ]
