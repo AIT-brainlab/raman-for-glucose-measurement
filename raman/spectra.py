@@ -6,7 +6,7 @@ from copy import deepcopy
 from typing import Self
 from pymongo.errors import DuplicateKeyError
 
-from raman.database import collection_blood, collection_ref
+from raman.database import collection_finger, collection_ref
 from raman.sample import Sample
 
 
@@ -22,9 +22,9 @@ def _load_raman_from_txt(path: Path) -> tuple[np.ndarray, np.ndarray]:
     return deepcopy(measure[:, 0]), deepcopy(measure[:, 1])
 
 
-class Blood(BaseModel):
+class Finger(BaseModel):
     """
-    Class to represent a single raman spectrum of blood
+    Class to represent a single raman spectrum of Finger
     """
 
     _id = None  # MongoDB ObjectId
@@ -55,7 +55,7 @@ class Blood(BaseModel):
                     path (Path): Path to the file
 
                 Returns:
-                    Blood object
+                    Finger object
         """
         if not path.exists():
             raise FileNotFoundError(f"File {path} does not exist")
@@ -100,9 +100,9 @@ class Blood(BaseModel):
         item["timestamp"] = datetime.strptime("".join(datetime_str), "%Y%m%d%H%M%S")  # type: ignore
         item["raman_shift"] = list(x)  # type: ignore
         item["intensity"] = list(y)  # type: ignore
-        blood = Blood(**item)
+        finger = Finger(**item)
 
-        return blood  # type: ignore
+        return finger  # type: ignore
 
     @classmethod
     def from_database(cls, subject_id: str, timestamp: datetime) -> Self:
@@ -112,18 +112,18 @@ class Blood(BaseModel):
             subject_id (str): Subject ID
             timestamp (datetime): Timestamp
         Returns:
-            Blood object
+            Finger object
         """
         query = {"subject_id": subject_id, "timestamp": timestamp}
-        item = collection_blood.find_one(query)
+        item = collection_finger.find_one(query)
         if item is None:
             raise ValueError(
                 f"Item with subject_id {subject_id} and timestamp {timestamp} not found"
             )
 
-        blood = Blood(**item)
-        blood._id = item["_id"]
-        return blood  # type: ignore
+        finger = Finger(**item)
+        finger._id = item["_id"]
+        return finger  # type: ignore
 
     def to_sample(self, interpolate: bool = True, verbose: bool = True) -> Sample:
         """Convert the spectrum to a sample object
@@ -152,24 +152,24 @@ class Blood(BaseModel):
         #     raise ValueError("glucose is not set")
         if self._id is None:
             try:
-                item = collection_blood.insert_one(self.model_dump())
+                item = collection_finger.insert_one(self.model_dump())
                 self._id = item.inserted_id
             except DuplicateKeyError:
                 raise DuplicateKeyError(
                     f"Duplicate entry for {self.subject_id} at {self.timestamp}"
                 )
         else:
-            collection_blood.update_one({"_id": self._id}, {"$set": self.model_dump()})
+            collection_finger.update_one({"_id": self._id}, {"$set": self.model_dump()})
 
     def delete(self):
         if self._id is None:
             pass
-        collection_blood.delete_one({"_id": self._id})
+        collection_finger.delete_one({"_id": self._id})
 
 
 class Reference(BaseModel):
     """
-    Class to represent a single raman spectrum of blood
+    Class to represent a single raman spectrum of Finger
     """
 
     _id = None  # MongoDB ObjectId
@@ -307,20 +307,20 @@ class Reference(BaseModel):
         collection_ref.delete_one({"_id": self._id})
 
 
-def load_spectra_of_subject(subject_id: str) -> list[Blood]:
+def load_spectra_of_subject(subject_id: str) -> list[Finger]:
     """Load all spectra of a subject from the database.
 
     Args:
         subject_id (str): The subject ID.
     Returns:
-        list[Blood]: A list of Blood objects.
+        list[Finger]: A list of Finger objects.
     """
-    blood_samples: list[Blood] = []
-    for i in collection_blood.find({"subject_id": subject_id}):
-        blood = Blood(**i)
-        blood._id = i["_id"]
-        blood_samples.append(blood)
-    return blood_samples
+    finger_samples: list[Finger] = []
+    for i in collection_finger.find({"subject_id": subject_id}):
+        finger = Finger(**i)
+        finger._id = i["_id"]
+        finger_samples.append(finger)
+    return finger_samples
 
 
 def load_spectra_of_subject_as_sample(subject_id: str) -> list[Sample]:
@@ -332,9 +332,9 @@ def load_spectra_of_subject_as_sample(subject_id: str) -> list[Sample]:
         list[Sample]: A list of Sample objects.
     """
     samples: list[Sample] = []
-    for i in collection_blood.find({"subject_id": subject_id}):
-        blood = Blood(**i)
-        blood._id = i["_id"]
-        sample = blood.to_sample()
+    for i in collection_finger.find({"subject_id": subject_id}):
+        finger = Finger(**i)
+        finger._id = i["_id"]
+        sample = finger.to_sample()
         samples.append(sample)
     return samples
