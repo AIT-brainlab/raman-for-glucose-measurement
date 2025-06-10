@@ -1,5 +1,6 @@
 from .finger import Finger
 from .reference import Reference
+from .blood import Blood
 from ..sample import Sample as _Sample
 from ..database import collection_finger as _collection_finger
 
