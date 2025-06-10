@@ -20,3 +20,7 @@ Two things will happen:
 
 `uv` does not care much about Python system, it simply downloads a new one and symlink from `.python/` to the `.venv/` directory.
 This means experimenting with Python version is easy and fast because they are all isolated in the `.venv/` and `.python/` directory.
+
+To change python version, first, get the python version `uv python install <version>` then use `uv python pin <version>` to pin the version.
+This will create a `.python-version` file in the root directory.
+Recreate the environment with `uv sync` to reinstall the dependencies.
